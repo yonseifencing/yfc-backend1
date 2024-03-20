@@ -1,7 +1,7 @@
 # users/serializers.py
 from django.contrib.auth.models import User # User 모델
 from django.contrib.auth.password_validation import validate_password # Django의 기본 pw 검증 도구
-from .models import Profile
+from .models import Profile, Post
 
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token # Token 모델
@@ -53,7 +53,7 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(required=True, write_only=True)
     # write_only=True 옵션을 통해 클라이언트->서버의 역직렬화는 가능하지만, 서버->클라이언트 방향의 직렬화는 불가능하도록 해준다.
     
-    def validate(self, data):
+    def validate(self, data): # 유효성 검사 적용 
         user = authenticate(**data)
         if user:
             token = Token.objects.get(user=user) # 해당 유저의 토큰을 불러옴
@@ -62,9 +62,29 @@ class LoginSerializer(serializers.Serializer):
             {"error": "Unable to log in with provided credentials."}
         )
     
+class PostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ("id","title","image1","image2","image3","imgae4","image5","content","dt_created","dt_updated")
+
+    def get_authors_email(self, obj):
+        return obj.author.email
+
+# 현재 프로필을 보여주는 밑에 게시글 보여주는 프로필 업데이트랑 같이해도 되기는 하는데 가독성상 
+class ProfileViewSerializer(serializers.ModelSerializer):
+    posts = PostSerializer(many=True ,read_only = True)
+
+    class Meta : 
+        model = Profile
+        fields = ("name", "user_pic", "student_number", "major","join_year")
+
 
 # 프로필 업데이트 
-class ProfileSerializer(serializers.ModelSerializer):
+class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ("name", "user_pic", "student_number", "major","join_year")
+# django에서 form 이랑 비슷하다 그리고 여기가 데이터를 변환하는 곳 fields 에다가 이런 데이터들을 변환할거야 알려주고 
+# profileserializer에 담는다 
+
+
