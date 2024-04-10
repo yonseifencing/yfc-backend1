@@ -59,7 +59,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
         # 관리자 user 생성
-    def create_superuser(self, student_number, password,email):
+    def create_superuser(self, student_number, password):
         user = self.create_user(
             student_number,
             password = password
