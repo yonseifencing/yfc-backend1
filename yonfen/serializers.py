@@ -1,7 +1,7 @@
 # users/serializers.py
 # from django.contrib.auth.models import User # User 모델
 from django.contrib.auth.password_validation import validate_password # Django의 기본 pw 검증 도구
-from .models import Profile, Post ,User
+from .models import Profile, Post ,User,Comment
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from rest_framework import serializers
@@ -145,18 +145,33 @@ class LoginSerializer(TokenObtainPairSerializer): # view.py tokenobtain과 연�
         return token
 
 
-class PostSerializer(serializers.ModelSerializer):
+class PostListSerializer(serializers.ModelSerializer):
+    author = serializers.ReadOnlyField(source='author.name')
     class Meta:
         model = Post
-        fields = '__all__'
+        fields = ('author','title','image1')
 
         # fields = ("id","title","image1","image2","image3","imgae4","image5","content","dt_created","dt_updated")
     def get_authors_student_number(self, obj):
         return obj.author.student_number
+class PostCreateSerializer(serializers.ModelSerializer): # 폼처럼 사용하는 시리얼라이즈 
+    class Meta:
+        model = Post
+        fields = '__all__'
+
+class PostDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = '__all__'
+class CommentSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.name') # user 정보는 post 로 들어와도 수정하지 못 하게 source 는 comment가 역관계이니까 user모델 에서도 student_number를 user 정보를 가져와서 user로 삼는다 
+    class Meta:
+        model = Comment
+        fields = ['post', 'user', 'created_at', 'comment']
 
 # 현재 프로필을 보여주는 밑에 게시글 보여주는 프로필 업데이트랑 같이해도 되기는 하는데 가독성상 
 class ProfileViewSerializer(serializers.ModelSerializer):
-    posts = PostSerializer(many=True ,read_only = True)
+    posts = PostListSerializer(many=True ,read_only = True)
 
     class Meta : 
         model = Profile
@@ -180,3 +195,27 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 #         model = get_user_model()
 #         fields = ('id','student_number', 'email', 'name', 'password', 'join_year','major','phone_number')
 
+
+# 중요 
+# 시리얼라이즈는 데이터를 보낼 때 json 형태로 보내주는 거임 
+
+# class BoardSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Board
+#         fields = [
+#             "id",
+#             "author_email", # 이 필드를 추가로 보내주기 
+#             "title",
+#             "content",
+#             "dt_created",
+#             "dt_modified",
+#         ]
+
+#     author_email = serializers.SerializerMethodField("get_authors_email") # db에는 필드가 없지만 가상 필드 만들어주고 보내기 
+#     # MethodField 는 내가 필드를 정의할 수 있는거 그래서 방법이 들어가야 되는데 그걸 파라미터로 받는거임 그래서 get_authors 라는 함수를 받는거
+
+#     def get_authors_email(self, obj): # 함수를 정의함 author.email 데이터를 author_email 로 보내는거 
+#         return obj.author.email
+#     # 이런식으로 foreignkey 엮어 놓은것들 데이터 보낼 수 있겠네 아닌가 근데 어차피 id 값은 user로 연결해둔거 아님? 아니네 id 는 그 게시물의 숫자이네 
+#     # 그래서 추가적으로 누가 작성했는지 보고 싶으니 추가로 author_email 이라는 가상 필드를 만들어서 보내주는거네 
+#     # 프론트도 해야 뭔가 이해가 좀 더 잘될 듯 

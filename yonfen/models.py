@@ -111,6 +111,7 @@ class User(AbstractBaseUser):
     # is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+ 
 
 	# 헬퍼 클래스 사용
     objects = UserManager()
@@ -135,10 +136,10 @@ class User(AbstractBaseUser):
 
 
 # profile 에서 user_pic 이랑 상태만 받으면 될 듯 그리고 리시버 사용하면 됨 
-class Profile(models.Model):
+class Profile(models.Model):# 여기다가는 학교에 대한 것들을 적어둘까 기본 유저 는 유저에 두고 근데 왜 그래야지? 커리 검색이 쉬워지나? 
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    user_pic = models.ImageField(default='default_profile_pic.jpg', upload_to='user_pics')# 유저 수정페이지 때 보내주면 될 듯 
 
-    user_pic = models.ImageField(default='default_profile_pic.jpg', upload_to='user_pics')
     STATUS_CHOICES = [
         ('졸업', '졸업'),
         ('재학', '재학'),
@@ -147,85 +148,7 @@ class Profile(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
 
 
-    # gpt 
-# class UserManager(BaseUserManager):
-#     def create_user(self, student_number, password=None, **extra_fields):
-#         if not student_number:
-#             raise ValueError('학번을 입력해주세요')
-#         user = self.model(student_number=student_number, **extra_fields)
-#         user.set_password(password)
-#         user.save(using=self._db)
-#         return user
 
-#     def create_superuser(self, student_number, password=None, **extra_fields):
-#         extra_fields.setdefault('is_staff', True)
-#         extra_fields.setdefault('is_superuser', True)
-#         return self.create_user(student_number, password, **extra_fields)
-
-
-# class User(AbstractBaseUser, PermissionsMixin):
-#     name = models.CharField(max_length=6, validators=[validate_no_special_characters]) 
-#     student_number = models.CharField(max_length=10, unique=True, validators=[validate_no_special_characters])
-#     major = models.CharField(max_length=20, validators=[validate_no_special_characters])
-#     current_year = date.today().year
-#     YEAR_CHOICES = [(str(year) + '-' + str(semester), str(year) + '-' + str(semester)) for year in range(1987, current_year +1) for semester in [1, 2]]
-#     join_year = models.CharField(
-#         max_length=7,
-#         choices=YEAR_CHOICES,
-#         default='2020-1', ) 
-#     is_staff = models.BooleanField(default=False)
-#     is_active = models.BooleanField(default=True)
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-
-#     objects = UserManager()
-
-#     USERNAME_FIELD = 'student_number'
-    
-#     def save(self, *args, **kwargs):
-#         # 사용자 생성시 자동으로 슈퍼유저로 설정
-#         if self.is_superuser:
-#             self.is_staff = True
-#         super().save(*args, **kwargs)
-
-# class Profile(models.Model):
-#     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
-#     # primary_key를 User의 pk로 설정하여 통합적으로 관리
-   
-#     name = models.CharField(
-#         max_length=10,
-        
-#         validators=[validate_no_special_characters],
-#         error_messages={'unique':'이미 등록된 이름입니다'}
-#     )  # 이름 이름 똑 같은면 + 1 카운팅 되는거 입력해야 할 듯 
-#     # 그리고 남자인지 여자인지 써야 되나?
-#     user_pic = models.ImageField(default='default_profile_pic.jpg', upload_to='user_pics')
-#     # 유저 사진인데 이건 유저 페이지에서 수정버튼 누르면 될 듯 
-#     student_number = models.CharField(
-#         max_length=10,
-#         unique=True,
-#         null=True,
-#         validators=[validate_no_special_characters],
-#         error_messages={'unique':'이미 등록된 학번입니다'}
-#     ) # 학번 
-#     major = models.CharField(
-#         max_length=20,
-        
-#         validators=[validate_no_special_characters],
-    
-        
-#     ) # 학과
-#     current_year = date.today().year
-#     YEAR_CHOICES = [(str(year) + '-' + str(semester), str(year) + '-' + str(semester)) for year in range(1987, current_year +1) for semester in [1, 2]]
-#     join_year = models.CharField(
-#         max_length=7,
-#         choices=YEAR_CHOICES,
-#         default='2020-1', ) 
-#      # 입부년도 
-#     phone_number = # 핸드폰 넘버 
-
-# 어센틱케이션 페이지에 get , post 해야됨 
-# 
 
 
 
@@ -244,10 +167,11 @@ class Profile(models.Model):
 # 로그인하고 > 바로 수정페이지로 가게끔 하고  
 # 이런개념인가 view에서 해당 기능이 필요한 api 로 들어가면 거기서 일어나는 모든 작동은 view에서 정의한 api 한해서 결정되는건가 
 # 삭제하면 삭제버튼을 누르면 api에서 가능하게끔 설정해뒀으니 그렇게 되는건가 ? 
-class Post(models.Model): 
+class Post(models.Model):  
+    # id 필드 안만들어도됨 자동임  , 근데 이렇게 만드는게 맞나? 설정을 
     title = models.CharField(max_length=50)
     image1 = models.ImageField(upload_to='post_pics',blank=True) # 용량 확장 공사 진행해야 되고 , 프론트에서 필드를 추가할때 +누르면 이미지 필드 나올 수 있게 하면 되지 않을까
-    image2 = models.ImageField(upload_to='post_pics',blank=True)
+    image2 = models.ImageField(upload_to='post_pics',blank=True) # > 이미지 , 동영상 > 외부 스토리지에 저장하고 mongodb에 url 저장해야됨 
     image3 = models.ImageField(upload_to='post_pics',blank=True)
     image4 = models.ImageField(upload_to='post_pics',blank=True)
     image5 = models.ImageField(upload_to='post_pics',blank=True)
@@ -261,7 +185,7 @@ class Post(models.Model):
 
     dt_updated = models.DateTimeField(auto_now=True)
 
-    author = models.ForeignKey(User, on_delete=models.CASCADE ,related_name='reviews') # 이렇게 등록하면 post 에 대한 글 화면 비출 때 user 화면 띄울 수 있음 
+    author = models.ForeignKey(User, on_delete=models.CASCADE ,related_name='posts') # 이렇게 등록하면 post 에 대한 글 화면 비출 때 user 화면 띄울 수 있음 
     # likes = GenericRelation('Like', related_query_name='review') like 모델 연결하면 
 
     def __str__(self):
@@ -273,3 +197,18 @@ class Post(models.Model):
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
+class Comment(models.Model):
+    post = models.ForeignKey(Post,on_delete=models.CASCADE,related_name='comments') # 역참조 post모델에서>post.commets.all() 이런식으로 접근가능 
+    user = models.ForeignKey(User,on_delete=models.CASCADE,related_name='comments')
+    created_at = models.DateField(auto_now_add=True)
+    comment = models.TextField()
+    def __str__(self):
+        return self.comment 
+class Attandance(models.Model) : 
+    User = models.ForeignKey(User, on_delete=models.CASCADE,related_name='attandace')
+    
+
+# 지금 필요한게 게시글 , 댓글 , 좋아요? 이고 좋아요를 누르면 그 사람이 무엇을 좋아하는지 알고리즘 돌릴 수 있지 않나?
+# 모델 만들고 (전에 했던거 참고) , 시리얼라이즈 하고 , view 하면 되는데 궁금한게 
+# 모델을 2~3개 이용해야 되는데 어떻게 사용하지 view 나 거기서 원래 view 에서 추가해서 보내줬는데 
+

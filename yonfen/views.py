@@ -1,11 +1,12 @@
 # users/views.py
 import jwt
 from django.contrib.auth.models import User
-from rest_framework import generics, status ,permissions
+from rest_framework import generics, status ,permissions,viewsets
 from rest_framework.response import Response
+
 from .serializers import *
 from rest_framework.views import APIView
-from .models import Profile,Post
+from .models import Profile,Post,Comment
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from django.conf import settings
@@ -15,7 +16,7 @@ from .permissions import CustomReadOnly
 from knox.auth import TokenAuthentication
 from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from django.contrib.auth.models import update_last_login
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -28,7 +29,7 @@ def index(request):
     return JsonResponse({'message': 'Welcome to the main page!'})
 # view에서 설정하는 것은 그 페이지안에서 활용될 수 있는 기능들을 만드는 곳 
 
-class LoginView(TokenObtainPairView): # post 가 내부적으로 구현되어있음 
+class LoginView(TokenObtainPairView): # post 가 내부적으로 구현되어있음 , 로그인할 때만 token 얻을 수 있게 하는거
     serializer_class = LoginSerializer
 
 class RegisterView(generics.CreateAPIView):
@@ -134,24 +135,33 @@ class ProfileView(generics.ListAPIView): # 자신의 프로필 보는거 ,post �
 
 class PostListView(generics.ListAPIView):
     queryset = Post.objects.all()
-    serializer_class = PostSerializer
+    serializer_class = PostListSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly] 
 
 class PostCreateView(generics.ListCreateAPIView):
     queryset = Post.objects.all()
-    serializer_class = PostSerializer
+    serializer_class = PostCreateSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated] # 인증된 사용자에게만 허용 
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        serializer.save(author=self.request.user) # 객체를 생성하고 author 필드에 request.user 저장하기 
 
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Post.objects.all()
-    serializer_class = PostSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly] 
+    serializer_class = PostDetailSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly,CustomReadOnly] # custom 은 자신만 수정할 수 있고 다른 사람은 read만 가능 
+   # permission_classes = [permissions.IsAuthenticatedOrReadOnly] 
     # 인증된 사용자에게는 모든 작업 허용 , 인증되지 않는 사람에게는 읽기만 허용 
+class CommentViewSet(viewsets.ModelViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly,CustomReadOnly]
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
 
-
+    def perform_create(self, serializer):
+        serializer.save(user = self.request.user)
 
 # @api_view(['POST'])
 # @permission_classes([AllowAny])
@@ -233,3 +243,6 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
 #         user.save()
 
 #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+# view 3개 필요한거 아녀? list , create , 수정,삭제 

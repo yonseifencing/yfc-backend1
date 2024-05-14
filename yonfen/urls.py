@@ -1,5 +1,5 @@
 from django.urls import path,include
-from .views import LoginView,RegisterView,ProfileView,ProfileUpdateview,PostListView,PostCreateView,PostDetailView
+from .views import LoginView,RegisterView,ProfileView,ProfileUpdateview,PostListView,PostCreateView,PostDetailView,CommentViewSet
 from . import views
 from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView ,TokenVerifyView
 
@@ -17,10 +17,11 @@ urlpatterns = [
     path('posts/', PostListView.as_view(), name='post-list'),
     path('posts/create/', PostCreateView.as_view(), name='post-create'),
     path('posts/<int:pk>/', PostDetailView.as_view(), name='post-detail'),
-    
+    path('posts/<int:pk>/comments/', CommentViewSet.as_view(), name='post-comment'),
+
     # token
     # path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     # path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), # 프론트에서 access 끝나면 여기로 요청 
-
+    # 추가로 로직을 만들필요 없음 이미 내장되어 있음 
 ]
