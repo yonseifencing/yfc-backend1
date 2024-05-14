@@ -31,6 +31,7 @@ def index(request):
 
 class LoginView(TokenObtainPairView): # post 가 내부적으로 구현되어있음 , 로그인할 때만 token 얻을 수 있게 하는거
     serializer_class = LoginSerializer
+    
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -154,7 +155,7 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly,CustomReadOnly] # custom 은 자신만 수정할 수 있고 다른 사람은 read만 가능 
    # permission_classes = [permissions.IsAuthenticatedOrReadOnly] 
     # 인증된 사용자에게는 모든 작업 허용 , 인증되지 않는 사람에게는 읽기만 허용 
-class CommentViewSet(viewsets.ModelViewSet):
+class CommentViewSet(generics.RetrieveUpdateDestroyAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticatedOrReadOnly,CustomReadOnly]
     queryset = Comment.objects.all()

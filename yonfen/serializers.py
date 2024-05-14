@@ -143,6 +143,12 @@ class LoginSerializer(TokenObtainPairSerializer): # view.py tokenobtain과 연�
         # 사용자 정보를 jwt 토큰 포함 시킴 > 로그인한 사용자의 정보를 바로 확인할 수 있음 
 
         return token
+    def validate(self, attrs):
+        data = super().validate(attrs)
+
+        data['message'] = "hello"
+
+        return data
 
 
 class PostListSerializer(serializers.ModelSerializer):
