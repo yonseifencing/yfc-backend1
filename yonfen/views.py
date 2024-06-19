@@ -1,9 +1,9 @@
+
 # users/views.py
 import jwt
 from django.contrib.auth.models import User
 from rest_framework import generics, status ,permissions,viewsets
 from rest_framework.response import Response
-
 from .serializers import *
 from rest_framework.views import APIView
 from .models import Profile,Post,Comment
@@ -22,21 +22,16 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 SECRET_KEY = settings.SECRET_KEY
 from rest_framework_simplejwt.views import TokenObtainPairView
-
 # 회원가입 할 때 
-
 def index(request):
     return JsonResponse({'message': 'Welcome to the main page!'})
 # view에서 설정하는 것은 그 페이지안에서 활용될 수 있는 기능들을 만드는 곳 
-
 class LoginView(TokenObtainPairView): # post 가 내부적으로 구현되어있음 , 로그인할 때만 token 얻을 수 있게 하는거
     serializer_class = LoginSerializer
     
-
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-
 
 # class RegisterAPIView(APIView):
 #     def post(self, request):
@@ -66,11 +61,10 @@ class RegisterView(generics.CreateAPIView):
             
 #             return res
 #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 # class AuthAPIView(APIView):
 #     # 로그인
 #     def post(self, request):
-#     	# 유저 인증
+#       # 유저 인증
 #         user = authenticate(
 #             student_number=request.data.get("student_number"), password=request.data.get("password")
 #         )
@@ -98,7 +92,6 @@ class RegisterView(generics.CreateAPIView):
 #             return res
 #         else:
 #             return Response(status=status.HTTP_400_BAD_REQUEST)
-
 #     # 로그아웃
 #     def delete(self, request):
 #         # 쿠키에 저장된 토큰 삭제 => 로그아웃 처리
@@ -108,7 +101,6 @@ class RegisterView(generics.CreateAPIView):
 #         response.delete_cookie("access")
 #         response.delete_cookie("refresh")
 #         return response
-
 
 
 
@@ -133,21 +125,17 @@ class ProfileView(generics.ListAPIView): # 자신의 프로필 보는거 ,post �
     serializer_class = ProfileViewSerializer 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly] 
  # 요청한 유저가 다른 유저이면 수정은 안되고 read만 됨 
-
 class PostListView(generics.ListAPIView):
     queryset = Post.objects.all()
     serializer_class = PostListSerializer
     permission_classes = [IsAuthenticatedOrReadOnly] 
-
 class PostCreateView(generics.ListCreateAPIView):
     queryset = Post.objects.all()
     serializer_class = PostCreateSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated] # 인증된 사용자에게만 허용 
-
     def perform_create(self, serializer):
         serializer.save(author=self.request.user) # 객체를 생성하고 author 필드에 request.user 저장하기 
-
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Post.objects.all()
     serializer_class = PostDetailSerializer
@@ -160,10 +148,8 @@ class CommentViewSet(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly,CustomReadOnly]
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-
     def perform_create(self, serializer):
         serializer.save(user = self.request.user)
-
 # @api_view(['POST'])
 # @permission_classes([AllowAny])
 # def signup(request):
@@ -174,7 +160,6 @@ class CommentViewSet(generics.RetrieveUpdateDestroyAPIView):
 #     join_year = request.data.get('join_year')
 #     major = request.data.get('major')
 #     phone_number = request.data.get('phone_number')
-
 
 #     serializer = UserSerializer(data=request.data)
 #     serializer.email = email
@@ -183,14 +168,11 @@ class CommentViewSet(generics.RetrieveUpdateDestroyAPIView):
 #     serializer.name = join_year
 #     serializer.name = major
 #     serializer.name = phone_number
-
 #     if serializer.is_valid(raise_exception=True):
 #         user = serializer.save()
 #         user.set_password(password)
 #         user.save()
-
 #         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
 # @api_view(['POST'])
 # @permission_classes([AllowAny])
 # def signup(request):
@@ -201,49 +183,37 @@ class CommentViewSet(generics.RetrieveUpdateDestroyAPIView):
 #     join_year = request.data.get('join_year')
 #     major = request.data.get('major')
 #     phone_number = request.data.get('phone_number')
-
 #     serializer = UserSerializer(data=request.data)
-
 #     if serializer.is_valid(raise_exception=True):
 #         user = serializer.save(email=email, name=name, student_number=student_number, join_year=join_year, major=major, phone_number=phone_number)
 #         user.set_password(password)
 #         user.save()
-
 #         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
 # @api_view(['POST'])
 # @permission_classes([AllowAny])
 # def login(request):
 #     student_number = request.data.get('student_number')
 #     password = request.data.get('password')
-
 #     user = authenticate(student_number=student_number, password=password)
 #     if user is None:
 #         return Response({'message': '아이디 또는 비밀번호가 일치하지 않습니다.'}, status=status.HTTP_401_UNAUTHORIZED)
-
 #     refresh = RefreshToken.for_user(user)
 #     update_last_login(None, user)
-
 #     return Response({'refresh_token': str(refresh),
 #                      'access_token': str(refresh.access_token), }, status=status.HTTP_200_OK)
-
 # @api_view(['POST'])
 # @permission_classes([AllowAny])
 # def signup(request):
 #     email = request.data.get('email')
 #     password = request.data.get('password')
 #     name = request.data.get('name')
-
 #     serializer = UserSerializer(data=request.data)
 #     serializer.email = email
 #     serializer.name = name
-
 #     if serializer.is_valid(raise_exception=True):
 #         user = serializer.save()
 #         user.set_password(password)
 #         user.save()
-
 #         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
 
 # view 3개 필요한거 아녀? list , create , 수정,삭제 
