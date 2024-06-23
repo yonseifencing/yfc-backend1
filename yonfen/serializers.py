@@ -1,7 +1,7 @@
 # users/serializers.py
 # from django.contrib.auth.models import User # User 모델
 from django.contrib.auth.password_validation import validate_password # Django의 기본 pw 검증 도구
-from .models import Profile, Post ,User,Comment
+from .models import *
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from rest_framework import serializers
@@ -24,8 +24,107 @@ from django.contrib.auth import get_user_model
 #         return user
 
 
+# 프로필 설정  
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Student
+        fields = ("major","join_year","status")
+
 
 class UserSerializer(serializers.ModelSerializer):
+    student = ProfileSerializer()  # 각 사용자는 하나의 프로필을 가짐
+    
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        validators=[validate_password],  # 비밀번호에 대한 검증, validate_password는 내장 함수
+    )
+    password2 = serializers.CharField(  # 비밀번호 확인을 위한 필드
+        write_only=True,
+        required=True,
+    )
+
+    class Meta:
+        model = User
+        fields = ["student_number",'email', 'name', 'password', 'password2', 'phone_number', 'gender','student'] # 이게 순서에 영향을 받음 
+        # drf 에서는 이렇게 student 모델을 user 모델 안으로 넣는다고 생각함 
+    def validate(self, data):  # password와 password2의 일치 여부 확인
+        if data['password'] != data['password2']:
+            raise serializers.ValidationError({"password": "비밀번호가 다릅니다."})
+        return data
+
+    def create(self, validated_data):
+        student_data = validated_data.pop('student')
+        user = User.objects.create_user(
+            student_number = validated_data['student_number'],
+            name=validated_data['name'],
+            email=validated_data['email'],
+            gender=validated_data['gender'],
+            phone_number=validated_data['phone_number'],
+            password=validated_data['password'],  # 비밀번호 필드 추가
+        )
+        user.set_password(validated_data['password'])  # 암호화 저장
+        user.save()  # 데이터베이스에 저장
+        
+        # Student 인스턴스 생성
+        Student.objects.create(
+            user=user,
+            major=student_data['major'],
+            join_year=student_data['join_year']
+        )
+
+        return user
+
+class UserPostListSerializer(serializers.ModelSerializer):
+    class Meta :
+        model = Post
+        fields = ('image1')
+
+
+
+
+class UserProfileSerializer(serializers.ModelSerializer): # 유저 개인 페이지 시리얼라이즈 인스타 처럼 
+    post = UserPostListSerializer
+    class Meta : 
+        models = User 
+        fields = ('name','user_pic','post')
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Student
+        fields = ("status")
+
+class UserUpdateSerializer(serializers.ModelSerializer): # 유저 개인 프로필 수정 
+    student = ProfileUpdateSerializer()
+    class Meta : 
+        model = User
+        fields = ("phone_number","user_pic","student")
+
+class PostSerializer(serializers.ModelSerializer): 
+    class Meta : 
+        model = Post
+        fields = '__all__'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 원래 됐던거 원래데로 되돌릴려면 모델 수정해야 됨 
+class uUserSerializer(serializers.ModelSerializer):
+    student = ProfileSerializer()
     # password = serializers.CharField(write_only=True)
     password = serializers.CharField(
         write_only=True,
@@ -61,6 +160,7 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password']) # 암호와 저장 
         user.save() # 데이터베이스에 저장하는 
         return user
+    
 
 # # 회원가입 시리얼라이저
 # class RegisterSerializer(serializers.ModelSerializer):
@@ -169,6 +269,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = '__all__'
+
 class CommentSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.name') # user 정보는 post 로 들어와도 수정하지 못 하게 source 는 comment가 역관계이니까 user모델 에서도 student_number를 user 정보를 가져와서 user로 삼는다 
     class Meta:
@@ -180,48 +281,22 @@ class ProfileViewSerializer(serializers.ModelSerializer):
     posts = PostListSerializer(many=True ,read_only = True)
 
     class Meta : 
-        model = Profile
+        model = Student
         fields = ("name", "user_pic", "student_number", "major","join_year")
 
 
-# 프로필 업데이트 
-class ProfileUpdateSerializer(serializers.ModelSerializer):
+class PhotoSerializer(serializers.ModelSerializer):
+    class Meta : 
+        model = test
+        fields = '__all__'
+
+
+class AttandanceSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Profile
-        fields = ("name", "user_pic", "student_number", "major","join_year")
-# django에서 form 이랑 비슷하다 그리고 여기가 데이터를 변환하는 곳 fields 에다가 이런 데이터들을 변환할거야 알려주고 
-# profileserializer에 담는다 
+        model = Attandance
+        fields = ['id', 'user', 'check_count']  # 필드 이름을 check에서 check_count로 변경
 
-
-
-# class UserSerializer(serializers.ModelSerializer):
-#     password = serializers.CharField(write_only=True)
-
-#     class Meta:
-#         model = get_user_model()
-#         fields = ('id','student_number', 'email', 'name', 'password', 'join_year','major','phone_number')
-
-
-# 중요 
-# 시리얼라이즈는 데이터를 보낼 때 json 형태로 보내주는 거임 
-
-# class BoardSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Board
-#         fields = [
-#             "id",
-#             "author_email", # 이 필드를 추가로 보내주기 
-#             "title",
-#             "content",
-#             "dt_created",
-#             "dt_modified",
-#         ]
-
-#     author_email = serializers.SerializerMethodField("get_authors_email") # db에는 필드가 없지만 가상 필드 만들어주고 보내기 
-#     # MethodField 는 내가 필드를 정의할 수 있는거 그래서 방법이 들어가야 되는데 그걸 파라미터로 받는거임 그래서 get_authors 라는 함수를 받는거
-
-#     def get_authors_email(self, obj): # 함수를 정의함 author.email 데이터를 author_email 로 보내는거 
-#         return obj.author.email
-#     # 이런식으로 foreignkey 엮어 놓은것들 데이터 보낼 수 있겠네 아닌가 근데 어차피 id 값은 user로 연결해둔거 아님? 아니네 id 는 그 게시물의 숫자이네 
-#     # 그래서 추가적으로 누가 작성했는지 보고 싶으니 추가로 author_email 이라는 가상 필드를 만들어서 보내주는거네 
-#     # 프론트도 해야 뭔가 이해가 좀 더 잘될 듯 
+class CodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Code
+        fields = ['id', 'code', 'created_at', 'valid_until']
