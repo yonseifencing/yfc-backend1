@@ -15,7 +15,7 @@ from django.core.exceptions import ImproperlyConfigured
 load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 SITE_ID = 1
-secret_file = os.path.join(BASE_DIR, 'gitignore/secrets.json')  # secrets.json 파일 위치를 명시
+secret_file = os.path.join(BASE_DIR, 'secrets.json')  # secrets.json 파일 위치를 명시
 with open(secret_file) as f:
     secrets = json.loads(f.read())
 def get_secret(setting):

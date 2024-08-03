@@ -22,7 +22,12 @@ urlpatterns = [
 
     # 출석체크
     path('create-code/', CodeCreateView.as_view(), name='create-code'),
-    path('check-attendance/', AttandanceCheckView.as_view(), name='check-attendance'),
+    path('check-attendance/', UserAttendanceCheckView.as_view(), name='check-attendance'),
+    
+    # 랭킹전 
+    path('rankings/', RankingListView.as_view(), name='ranking_list'),
+    path('rankings/update-top/', RankingUpdateView.as_view(), name='update_top_ranking'),
+    # 앞에 어드민 붙여야 함 /admin/rankings/update-top/
     # token
     # path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     # path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

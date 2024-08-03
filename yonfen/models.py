@@ -11,7 +11,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.exceptions import ValidationError
-
+import random
 
 
 def post_pic_upload_to(instance, filename):
@@ -19,39 +19,6 @@ def post_pic_upload_to(instance, filename):
 
 def profile_pic_upload_to(instance, filename):
     return f'user_pic/{filename}'
-# 펜싱부 로그인 메인 페이지에서 listcreate view 로 해야됨 
-# status 랑 사진 수정 할 수 있게 profile.html 이 게시판이랑 이런거 다 볼 수 있는거네 
-# ycc 처럼 get , post , put , 하면 될 듯 > 프로필 업데이트 페이지를 따로 만드는게 아니라 
- 
-
-# # 헬퍼 클래스
-# class UserManager(BaseUserManager):
-#     def create_user(self, student_number, password, **kwargs):
-    	
-#         if not student_number:
-#             raise ValueError('학번 입력해주세요')
-#         user = self.model(
-#             student_number=self.student_number,
-#         )
-#         user.set_password(password)
-#         user.save(using=self._db)
-#         return user
-
-#     def create_superuser(self, student_number=None, password=None, **extra_fields):
-    	
-#         superuser = self.create_user(
-#             student_number=student_number,
-#             password=password,
-#         )
-        
-#         superuser.is_staff = True
-#         superuser.is_superuser = True
-#         superuser.is_active = True
-        
-#         superuser.save(using=self._db)
-#         return superuser
-
-# AbstractBaseUser를 상속해서 유저 커스텀
 
 
 class UserManager(BaseUserManager):
@@ -146,7 +113,6 @@ class User(AbstractBaseUser):
     
     
 
-
 # profile 에서 user_pic 이랑 상태만 받으면 될 듯 그리고 리시버 사용하면 됨 
 class Student(models.Model):# 여기다가는 학교에 대한 것들을 적어둘까 기본 유저 는 유저에 두고 근데 왜 그래야지? 커리 검색이 쉬워지나? 
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
@@ -169,6 +135,13 @@ class Student(models.Model):# 여기다가는 학교에 대한 것들을 적어�
         ('휴학', '휴학'),
     ]
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+    FENCING_CHOICES = [
+        ('플뢰레','플뢰레'),
+        ('에페','에페'),
+        ('사브르','사브르'),
+        ('미정','미정'),
+    ]
+    fencing = models.CharField(max_length=10,choices=FENCING_CHOICES)
 
 
 
@@ -219,19 +192,19 @@ class Comment(models.Model):
     comment = models.TextField()
     def __str__(self):
         return self.comment 
-class Attandance(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attandace')
-    check_count = models.IntegerField(default=0)  # 필드 이름을 check에서 check_count로 변경
+# class Attandance(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attandace')
+#     check_count = models.IntegerField(default=0)  # 필드 이름을 check에서 check_count로 변경
 
-class Code(models.Model):
-    code = models.CharField(max_length=4, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    valid_until = models.DateTimeField()
+# class Code(models.Model):
+#     code = models.CharField(max_length=4, unique=True)
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     valid_until = models.DateTimeField()
 
-    def save(self, *args, **kwargs):
-        if not self.valid_until:
-            self.valid_until = timezone.now() + timedelta(hours=2)
-        super().save(*args, **kwargs)
+#     def save(self, *args, **kwargs):
+#         if not self.valid_until:
+#             self.valid_until = timezone.now() + timedelta(hours=2)
+#         super().save(*args, **kwargs)
 
 class test(models.Model):
     testfield = models.CharField(max_length=200)
@@ -239,3 +212,52 @@ class test(models.Model):
     def __str__(self):
         return self.testfield
     
+
+
+class Code(models.Model):
+    code = models.CharField(max_length=4)
+    created_at = models.DateTimeField(auto_now_add=True)
+    valid_until = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+
+class UserAttendance(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    code = models.ForeignKey(Code, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_correct = models.IntegerField(default=0)  # 1로 변경될 필드
+    last_attendance_date = models.DateField(null=True, blank=True)  # 마지막 출석 날짜
+    total_attendances = models.IntegerField(default=0)  # 총 출석 횟수
+
+    def check_code(self, code_input):
+        if self.code.code == code_input: # self.code.code는 UserAttendance 인스턴스가 참조하는 Code 모델 인스턴스의 code 필드
+            self.is_correct = 1  # 출석 시 1로 설정
+            self.last_attendance_date = timezone.now().date()  # 마지막 출석 날짜 업데이트
+            self.total_attendances += 1  # 총 출석 횟수 증가
+            self.save()  # 변경된 필드 저장
+            self.update_ranking()
+        else:
+            self.is_correct = 0  # 출석 실패 시 0으로 설정
+            self.save()
+
+    def update_ranking(self):
+        ranking, created = Ranking.objects.get_or_create(user=self.user) # 연결된 객체를 가져오거나 존재하지 않으면 새로 생성 
+        ranking.score += 0.5 # rangking 모델에 score 에 0.5추가 
+        ranking.save()
+
+class Ranking(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE) # 
+    score = models.FloatField(default=0.0) #출석 점수 
+    rank_score = models.FloatField(default=0.0) # 랭킹전을 통해 부여된 점수 
+    total_score = models.FloatField(default=0.0, editable=False) # 토탈 점수 
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        self.total_score = self.score + self.rank_score
+        super().save(*args, **kwargs)
+
+    def update_rank_score(self, rank):
+        rank_points = {1: 10, 2: 8, 3: 6, 4: 4, 5: 2}
+        self.rank_score = rank_points.get(rank, 0)
+        self.save()
+
+        # 일단 jwt 이런거 다 끄고 실험해 봐야 할 듯 

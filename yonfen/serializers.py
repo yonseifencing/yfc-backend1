@@ -28,7 +28,7 @@ from django.contrib.auth import get_user_model
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
-        fields = ("major","join_year","status")
+        fields = ("major","join_year","status","fencing")
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -162,76 +162,7 @@ class uUserSerializer(serializers.ModelSerializer):
         return user
     
 
-# # 회원가입 시리얼라이저
-# class RegisterSerializer(serializers.ModelSerializer):
-    
-#     password = serializers.CharField(
-#         write_only=True,
-#         required=True,
-#         validators=[validate_password], # 비밀번호에 대한 검증
-#     )
-#     password2 = serializers.CharField( # 비밀번호 확인을 위한 필드
-#         write_only=True,
-#         required=True,
-#     ) 
-    
 
-#     class Meta:
-#         model = User
-#         # fields = ('username', 'email', 'password', 'password2')
-#         fields = ('name','student_number','major','join_year','phone_number','password','password2')
-
-#     def validate(self, data): # password과 password2의 일치 여부 확인
-#         if data['password'] != data['password2']:
-#             raise serializers.ValidationError(
-#                 {"password": "Password fields didn't match."})
-        
-#         return data
-
-#     def create(self, validated_data):
-#         # CREATE 요청에 대해 create 메서드를 오버라이딩하여, 유저를 생성하고 토큰도 생성하게 해준다.
-#         user = User.objects.create_user(
-#             name=validated_data['name'],
-#             student_number=validated_data['student_number'],
-#             major=validated_data['major'],
-#             join_year=validated_data['join_year'],
-#             phone_number=validated_data['phone_number'],
-#             email=validated_data['email'],
-            
-#         )
-
-#         user.set_password(validated_data['password'])
-#         user.save()
-#         token = Token.objects.create(user=user)
-#         return user
-
-
-# class UserSerializer(serializers.ModelSerializer):
-#     def create(self, validated_data):
-#         user = User.objects.create_user(
-#             student_number = validated_data['student_number'],
-#             name = validated_data['name'],
-#             password = validated_data['password']
-#         )
-#         return user
-#     class Meta:
-#         model = User
-#         fields = ['student', 'email', 'name', 'password','password2','join_year','phone_number']
-# 프런트와 소통하려면 시리얼 해야 하는데 굳이 안해도 되는 생성날짜나 이런것들 빼고 넣으면 될 듯 
-
-# class LoginSerializer(serializers.Serializer):
-#     student_number = serializers.CharField(required=True)
-#     password = serializers.CharField(required=True, write_only=True)
-#     # write_only=True 옵션을 통해 클라이언트->서버의 역직렬화는 가능하지만, 서버->클라이언트 방향의 직렬화는 불가능하도록 해준다.
-    
-#     def validate(self, data): # 유효성 검사 적용 
-#         user = authenticate(**data)
-#         if user:
-#             token = Token.objects.get(user=user) # 해당 유저의 토큰을 불러옴
-#             return token
-#         raise serializers.ValidationError( # 가입된 유저가 없을 경우
-#             {"error": "Unable to log in with provided credentials."}
-#         )
 class LoginSerializer(TokenObtainPairSerializer): # view.py tokenobtain과 연결해서 
 
     @classmethod # 이 부분은 아직이해가 잘 
@@ -291,12 +222,37 @@ class PhotoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class AttandanceSerializer(serializers.ModelSerializer):
+# class AttandanceSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Attandance
+#         fields = ['id', 'user', 'check_count']  # 필드 이름을 check에서 check_count로 변경
+
+# class CodeSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Code
+#         fields = ['id', 'code', 'created_at', 'valid_until']
+
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Attandance
-        fields = ['id', 'user', 'check_count']  # 필드 이름을 check에서 check_count로 변경
+        model = User
+        fields = '__all__'
 
 class CodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Code
-        fields = ['id', 'code', 'created_at', 'valid_until']
+        fields = '__all__'
+
+
+class UserAttendanceSerializer(serializers.ModelSerializer):
+    code_input = serializers.CharField(write_only=True) # 사용자 한테서 받을 코드 입력 창 굳이 모델에 만들지 않고 여기서 바로 비교 
+
+    class Meta:
+        model = UserAttendance
+        fields = ['user', 'code', 'created_at', 'is_correct', 'last_attendance_date', 'total_attendances', 'code_input']
+
+class RankingSerializer(serializers.ModelSerializer):
+    user = UserSerializer() # 이렇게 하고 fields all 하면 유저 페이지 에 있는거 전부 소환 하는 거임 
+    class Meta:
+        model = Ranking
+        fields = '__all__' 
+        # 여기서도 바로 할 수 없나? 이건 내가 한 번 해볼까 
